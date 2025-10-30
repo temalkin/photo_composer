@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      - TEMPLATE_PATH=/app/assets/templates/default.png
+    volumes:
+      - .:/app
+      - /app/node_modules
+    init: true
+    command: npm run dev
+
+

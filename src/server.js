@@ -23,9 +23,9 @@ const TEMPLATE_PATH = process.env.TEMPLATE_PATH || path.join(__dirname, '..', 'a
 const LAYOUT = {
   canvasWidth: 1200,
   canvasHeight: 1800,
-  photoBox: { x: 1250, y: 770, width: 844, height: 1055 }, // 4:5 aspect
+  photoBox: { x: 1250, y: 770, width: 846, height: 1057 }, // 4:5 aspect
   text: {
-    name: { x: 820, y: 300, fontSize: 100 },
+    name: { x: 1000, y: 770, fontSize: 100 },
     agentNumber: { x: 820, y: 360, fontSize: 36 },
     city: { x: 820, y: 420, fontSize: 36 },
     eyeColor: { x: 820, y: 480, fontSize: 36 },
