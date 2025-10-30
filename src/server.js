@@ -14,7 +14,7 @@ const FONT_FAMILY = process.env.FONT_FAMILY || 'Helvetica';
 const JPEG_QUALITY = process.env.JPEG_QUALITY ? Number(process.env.JPEG_QUALITY) : 90;
 const TEXT_COLOR = process.env.TEXT_COLOR || '#000000';
 const TEXT_BG_COLOR = process.env.TEXT_BG_COLOR || '#ffffff';
-const TEXT_BG_OPACITY = process.env.TEXT_BG_OPACITY ? Number(process.env.TEXT_BG_OPACITY) : 0.85; // 0..1
+const TEXT_BG_OPACITY = process.env.TEXT_BG_OPACITY ? Number(process.env.TEXT_BG_OPACITY) : 0; // 0..1
 
 // Default layout and template
 // Adjust these values to match your actual template image
@@ -29,13 +29,21 @@ const LAYOUT = {
   photoBox: { x: 1250, y: 770, width: 846, height: 1057 }, // 4:5 aspect
   text: {
     name: { x: 246, y: 830, fontSize: 65 },
+    nameYo: { x: 246, y: 821, fontSize: 65 },
     agentNumber: { x: 923, y: 1090, fontSize: 50 },
+    agentNumberYo: { x: 923, y: 1081, fontSize: 50 },
     city: { x: 450, y: 1219, fontSize: 50 },
-    eyeColor: { x: 544, y: 1331, fontSize: 50 },
+    cityYo: { x: 450, y: 1211, fontSize: 50 },
+    eyeColor: { x: 544, y: 1339, fontSize: 50 },
+    eyeColorYo: { x: 544, y: 1331, fontSize: 50 },
     cover: { x: 578, y: 1463, fontSize: 50 },
+    coverYo: { x: 578, y: 1455, fontSize: 50 },
     recruitmentDate: { x: 678, y: 1587, fontSize: 50 }
+    ,recruitmentDateYo: { x: 678, y: 1579, fontSize: 50 }
   }
 };
+
+
 
 function ensureTemplateExists() {
   if (!fs.existsSync(TEMPLATE_PATH)) {
@@ -96,7 +104,7 @@ async function processPhotoToBox(inputBuffer, targetWidth, targetHeight) {
   // Use fit: cover with target box and a 4:5 aspect preserved by the target box itself
   return await sharp(inputBuffer)
     .rotate()
-    .resize({ width: targetWidth, height: targetHeight, fit: 'cover', position: 'attention' })
+    .resize({ width: targetWidth, height: targetHeight, fit: 'cover', position: 'centre' })
     .jpeg({ quality: JPEG_QUALITY })
     .toBuffer();
 }
@@ -128,7 +136,11 @@ async function composeImage(photoBuffer, fields) {
   }
 
   async function addTextOverlay(key, value) {
-    const cfg = text[key];
+    let cfg = text[key];
+    if (/[Ёё]/.test(String(value || ''))) {
+      const alt = text[`${key}Yo`];
+      if (alt) cfg = alt;
+    }
     if (!cfg) return;
     const content = toUppercaseLocale(value);
     if (!content) return;
