@@ -10,7 +10,7 @@ require('dotenv').config();
 // Configuration
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const HOST = process.env.HOST || '0.0.0.0';
-const FONT_FAMILY = process.env.FONT_FAMILY || 'Helvetica, "Liberation Sans", Arial, sans-serif';
+const FONT_FAMILY = process.env.FONT_FAMILY || 'Helvetica';
 const JPEG_QUALITY = process.env.JPEG_QUALITY ? Number(process.env.JPEG_QUALITY) : 90;
 const TEXT_COLOR = process.env.TEXT_COLOR || '#000000';
 const TEXT_BG_COLOR = process.env.TEXT_BG_COLOR || '#ffffff';
@@ -69,17 +69,19 @@ function toUppercaseLocale(value) {
  * Create an SVG buffer with single-line text.
  */
 function createTextSVG(text, options) {
-  const { fontSize, width, height, fill = TEXT_COLOR, fontFamily = FONT_FAMILY, padding = Math.ceil(fontSize * 0.4), backgroundColor = TEXT_BG_COLOR, backgroundOpacity = TEXT_BG_OPACITY } = options;
+  const { fontSize, width, height, fill = TEXT_COLOR, fontFamily = FONT_FAMILY, padding = Math.ceil(fontSize * 1.4), backgroundColor = TEXT_BG_COLOR, backgroundOpacity = TEXT_BG_OPACITY } = options;
   const safeText = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const cx = Math.floor(width / 2);
+  const cy = Math.floor(height / 2);
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <defs>
     <style>
-      text { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: ${fill}; dominant-baseline: text-before-edge; alignment-baseline: text-before-edge; }
+      text { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: ${fill}; text-anchor: middle; dominant-baseline: middle; alignment-baseline: middle; }
     </style>
   </defs>
   <rect x="0" y="0" width="${width}" height="${height}" fill="${backgroundColor}" fill-opacity="${backgroundOpacity}" rx="6" ry="6"/>
-  <text x="${padding}" y="${padding}">${safeText}</text>
+  <text x="${cx}" y="${cy}">${safeText}</text>
 </svg>`;
   return Buffer.from(svg);
 }
