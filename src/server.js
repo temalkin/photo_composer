@@ -12,6 +12,9 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const FONT_FAMILY = process.env.FONT_FAMILY || 'Helvetica, "Liberation Sans", Arial, sans-serif';
 const JPEG_QUALITY = process.env.JPEG_QUALITY ? Number(process.env.JPEG_QUALITY) : 90;
+const TEXT_COLOR = process.env.TEXT_COLOR || '#000000';
+const TEXT_BG_COLOR = process.env.TEXT_BG_COLOR || '#ffffff';
+const TEXT_BG_OPACITY = process.env.TEXT_BG_OPACITY ? Number(process.env.TEXT_BG_OPACITY) : 0.85; // 0..1
 
 // Default layout and template
 // Adjust these values to match your actual template image
@@ -25,7 +28,7 @@ const LAYOUT = {
   canvasHeight: 1800,
   photoBox: { x: 1250, y: 770, width: 846, height: 1057 }, // 4:5 aspect
   text: {
-    name: { x: 1000, y: 770, fontSize: 100 },
+    name: { x: 250, y: 900, fontSize: 80 },
     agentNumber: { x: 820, y: 360, fontSize: 36 },
     city: { x: 820, y: 420, fontSize: 36 },
     eyeColor: { x: 820, y: 480, fontSize: 36 },
@@ -66,14 +69,17 @@ function toUppercaseLocale(value) {
  * Create an SVG buffer with single-line text.
  */
 function createTextSVG(text, options) {
-  const { fontSize, width, height, fill = '#000000', fontFamily = FONT_FAMILY } = options;
+  const { fontSize, width, height, fill = TEXT_COLOR, fontFamily = FONT_FAMILY, padding = Math.ceil(fontSize * 0.4), backgroundColor = TEXT_BG_COLOR, backgroundOpacity = TEXT_BG_OPACITY } = options;
   const safeText = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <style>
-    text { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: ${fill}; dominant-baseline: hanging; }
-  </style>
-  <text x="0" y="0">${safeText}</text>
+  <defs>
+    <style>
+      text { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: ${fill}; dominant-baseline: text-before-edge; alignment-baseline: text-before-edge; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="${width}" height="${height}" fill="${backgroundColor}" fill-opacity="${backgroundOpacity}" rx="6" ry="6"/>
+  <text x="${padding}" y="${padding}">${safeText}</text>
 </svg>`;
   return Buffer.from(svg);
 }
@@ -110,9 +116,13 @@ async function composeImage(photoBuffer, fields) {
     const cfg = text[key];
     if (!cfg) return;
     const content = toUppercaseLocale(value);
-    // Create a compact svg box; width heuristic: ~0.6em per character
-    const approxWidth = Math.max(200, Math.ceil(content.length * (cfg.fontSize * 0.6)));
-    const svg = createTextSVG(content, { width: approxWidth, height: Math.ceil(cfg.fontSize * 1.6), fontSize: cfg.fontSize });
+    // Compact box with padding and background; width heuristic: ~0.6em per character
+    const padding = Math.ceil(cfg.fontSize * 0.4);
+    const textBoxWidth = Math.max(200, Math.ceil(content.length * (cfg.fontSize * 0.6)));
+    const textBoxHeight = Math.ceil(cfg.fontSize * 1.4);
+    const svgWidth = textBoxWidth + padding * 2;
+    const svgHeight = textBoxHeight + padding * 2;
+    const svg = createTextSVG(content, { width: svgWidth, height: svgHeight, fontSize: cfg.fontSize, padding });
     overlays.push({ input: svg, left: cfg.x, top: cfg.y });
   }
 
