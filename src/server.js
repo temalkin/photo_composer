@@ -28,12 +28,12 @@ const LAYOUT = {
   canvasHeight: 1800,
   photoBox: { x: 1250, y: 770, width: 846, height: 1057 }, // 4:5 aspect
   text: {
-    name: { x: 250, y: 830, fontSize: 65 },
-    agentNumber: { x: 930, y: 1100, fontSize: 40 },
-    city: { x: 450, y: 1219, fontSize: 48 },
-    eyeColor: { x: 550, y: 1330, fontSize: 48 },
-    cover: { x: 600, y: 1463, fontSize: 48 },
-    recruitmentDate: { x: 700, y: 1587, fontSize: 48 }
+    name: { x: 246, y: 830, fontSize: 65 },
+    agentNumber: { x: 923, y: 1090, fontSize: 50 },
+    city: { x: 450, y: 1219, fontSize: 50 },
+    eyeColor: { x: 544, y: 1331, fontSize: 50 },
+    cover: { x: 578, y: 1463, fontSize: 50 },
+    recruitmentDate: { x: 678, y: 1587, fontSize: 50 }
   }
 };
 
@@ -116,6 +116,16 @@ async function composeImage(photoBuffer, fields) {
 
   // Prepare text overlays positioned with left/top
   const overlays = [];
+
+  // Add black border (3px) around the photo, above photo but below text
+  {
+    const stroke = 7;
+    const borderSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${photoBox.width}" height="${photoBox.height}">
+  <rect x="${stroke/2}" y="${stroke/2}" width="${photoBox.width - stroke}" height="${photoBox.height - stroke}" fill="none" stroke="#000000" stroke-width="${stroke}" shape-rendering="crispEdges"/>
+</svg>`;
+    overlays.push({ input: Buffer.from(borderSvg), left: photoBox.x, top: photoBox.y });
+  }
 
   async function addTextOverlay(key, value) {
     const cfg = text[key];
