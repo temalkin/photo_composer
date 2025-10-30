@@ -28,12 +28,12 @@ const LAYOUT = {
   canvasHeight: 1800,
   photoBox: { x: 1250, y: 770, width: 846, height: 1057 }, // 4:5 aspect
   text: {
-    name: { x: 250, y: 900, fontSize: 80 },
-    agentNumber: { x: 820, y: 360, fontSize: 36 },
-    city: { x: 820, y: 420, fontSize: 36 },
-    eyeColor: { x: 820, y: 480, fontSize: 36 },
-    cover: { x: 820, y: 540, fontSize: 36 },
-    recruitmentDate: { x: 820, y: 600, fontSize: 36 }
+    name: { x: 250, y: 830, fontSize: 65 },
+    agentNumber: { x: 930, y: 1100, fontSize: 40 },
+    city: { x: 450, y: 1219, fontSize: 48 },
+    eyeColor: { x: 550, y: 1330, fontSize: 48 },
+    cover: { x: 600, y: 1463, fontSize: 48 },
+    recruitmentDate: { x: 700, y: 1587, fontSize: 48 }
   }
 };
 
@@ -66,24 +66,27 @@ function toUppercaseLocale(value) {
 }
 
 /**
- * Create an SVG buffer with single-line text.
+ * Render text to raster buffer with transparent background and trim to content bounds.
  */
-function createTextSVG(text, options) {
-  const { fontSize, width, height, fill = TEXT_COLOR, fontFamily = FONT_FAMILY, padding = Math.ceil(fontSize * 1.4), backgroundColor = TEXT_BG_COLOR, backgroundOpacity = TEXT_BG_OPACITY } = options;
+async function renderTextBitmap(text, options) {
+  const { fontSize, fill = TEXT_COLOR, fontFamily = FONT_FAMILY } = options;
   const safeText = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const cx = Math.floor(width / 2);
-  const cy = Math.floor(height / 2);
+  const width = 4096; // large canvas to avoid clipping; will be trimmed
+  const height = Math.max(64, Math.ceil(fontSize * 2));
+  const y = Math.ceil(height * 0.5); // mid baseline to keep ascenders/descenders before trim
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <defs>
-    <style>
-      text { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: ${fill}; text-anchor: middle; dominant-baseline: middle; alignment-baseline: middle; }
-    </style>
-  </defs>
-  <rect x="0" y="0" width="${width}" height="${height}" fill="${backgroundColor}" fill-opacity="${backgroundOpacity}" rx="6" ry="6"/>
-  <text x="${cx}" y="${cy}">${safeText}</text>
+  <style>
+    text { font-family: ${fontFamily}; font-size: ${fontSize}px; font-weight: 700; fill: ${fill}; dominant-baseline: middle; alignment-baseline: middle; }
+  </style>
+  <text x="0" y="${y}">${safeText}</text>
 </svg>`;
-  return Buffer.from(svg);
+  const svgBuffer = Buffer.from(svg);
+  const { data, info } = await sharp(svgBuffer)
+    .png()
+    .trim() // trim transparent
+    .toBuffer({ resolveWithObject: true });
+  return { image: data, width: info.width, height: info.height };
 }
 
 /**
@@ -101,7 +104,7 @@ async function processPhotoToBox(inputBuffer, targetWidth, targetHeight) {
 /**
  * Compose final image:
  *  - place cropped photo into template at photoBox
- *  - overlay texts in uppercase at configured coordinates
+ *  - overlay texts in uppercase at configured coordinates, with auto-sized background panels
  */
 async function composeImage(photoBuffer, fields) {
   ensureTemplateExists();
@@ -111,29 +114,35 @@ async function composeImage(photoBuffer, fields) {
 
   const processedPhoto = await processPhotoToBox(photoBuffer, photoBox.width, photoBox.height);
 
-  // Prepare text overlays as small SVGs positioned with left/top
+  // Prepare text overlays positioned with left/top
   const overlays = [];
 
-  function addTextOverlay(key, value) {
+  async function addTextOverlay(key, value) {
     const cfg = text[key];
     if (!cfg) return;
     const content = toUppercaseLocale(value);
-    // Compact box with padding and background; width heuristic: ~0.6em per character
-    const padding = Math.ceil(cfg.fontSize * 0.4);
-    const textBoxWidth = Math.max(200, Math.ceil(content.length * (cfg.fontSize * 0.6)));
-    const textBoxHeight = Math.ceil(cfg.fontSize * 1.4);
-    const svgWidth = textBoxWidth + padding * 2;
-    const svgHeight = textBoxHeight + padding * 2;
-    const svg = createTextSVG(content, { width: svgWidth, height: svgHeight, fontSize: cfg.fontSize, padding });
-    overlays.push({ input: svg, left: cfg.x, top: cfg.y });
+    if (!content) return;
+    const padding = Math.ceil(cfg.fontSize * 0.6);
+    const rendered = await renderTextBitmap(content, { fontSize: cfg.fontSize });
+    const panelW = rendered.width + padding * 2;
+    const panelH = rendered.height + padding * 2;
+    // Background rectangle as SVG
+    const panelSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${panelW}" height="${panelH}">
+  <rect x="0" y="0" width="${panelW}" height="${panelH}" fill="${TEXT_BG_COLOR}" fill-opacity="${TEXT_BG_OPACITY}" rx="6" ry="6"/>
+</svg>`;
+    overlays.push({ input: Buffer.from(panelSvg), left: cfg.x, top: cfg.y });
+    const textLeft = cfg.x + Math.floor((panelW - rendered.width) / 2);
+    const textTop = cfg.y + Math.floor((panelH - rendered.height) / 2);
+    overlays.push({ input: rendered.image, left: textLeft, top: textTop });
   }
 
-  addTextOverlay('name', fields.name);
-  addTextOverlay('agentNumber', fields.agentNumber);
-  addTextOverlay('city', fields.city);
-  addTextOverlay('eyeColor', fields.eyeColor);
-  addTextOverlay('cover', fields.cover);
-  addTextOverlay('recruitmentDate', fields.recruitmentDate);
+  await addTextOverlay('name', fields.name);
+  await addTextOverlay('agentNumber', fields.agentNumber);
+  await addTextOverlay('city', fields.city);
+  await addTextOverlay('eyeColor', fields.eyeColor);
+  await addTextOverlay('cover', fields.cover);
+  await addTextOverlay('recruitmentDate', fields.recruitmentDate);
 
   const result = await template
     .composite([
