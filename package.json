@@ -1,0 +1,25 @@
+{
+  "name": "photo-composer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HTTP service that crops a photo to 4:5, composites onto a template, overlays text, and returns JPEG.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^8.0.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "sharp": "^0.33.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
+
