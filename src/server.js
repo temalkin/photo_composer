@@ -30,16 +30,22 @@ const LAYOUT = {
   text: {
     name: { x: 246, y: 830, fontSize: 65 },
     nameYo: { x: 246, y: 821, fontSize: 65 },
+    nameYi: { x: 246, y: 819, fontSize: 65 },
     agentNumber: { x: 923, y: 1090, fontSize: 50 },
     agentNumberYo: { x: 923, y: 1081, fontSize: 50 },
+    agentNumberYi: { x: 923, y: 1079, fontSize: 50 },
     city: { x: 450, y: 1219, fontSize: 50 },
     cityYo: { x: 450, y: 1211, fontSize: 50 },
+    cityYi: { x: 450, y: 1208, fontSize: 50 },
     eyeColor: { x: 544, y: 1339, fontSize: 50 },
     eyeColorYo: { x: 544, y: 1331, fontSize: 50 },
+    eyeColorYi: { x: 544, y: 1328, fontSize: 50 },
     cover: { x: 578, y: 1463, fontSize: 50 },
     coverYo: { x: 578, y: 1455, fontSize: 50 },
-    recruitmentDate: { x: 678, y: 1587, fontSize: 50 }
-    ,recruitmentDateYo: { x: 678, y: 1579, fontSize: 50 }
+    coverYi: { x: 578, y: 1452, fontSize: 50 },
+    recruitmentDate: { x: 678, y: 1587, fontSize: 50 },
+    recruitmentDateYo: { x: 678, y: 1579, fontSize: 50 },
+    recruitmentDateYi: { x: 678, y: 1577, fontSize: 50 }
   }
 };
 
@@ -137,7 +143,11 @@ async function composeImage(photoBuffer, fields) {
 
   async function addTextOverlay(key, value) {
     let cfg = text[key];
-    if (/[Ёё]/.test(String(value || ''))) {
+    const strValue = String(value || '');
+    if (/[Йй]/.test(strValue)) {
+      const alt = text[`${key}Yi`];
+      if (alt) cfg = alt;
+    } else if (/[Ёё]/.test(strValue)) {
       const alt = text[`${key}Yo`];
       if (alt) cfg = alt;
     }

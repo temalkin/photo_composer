@@ -14,5 +14,6 @@ services:
       - /app/node_modules
     init: true
     command: npm run dev
+    restart: always
 
 
