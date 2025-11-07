@@ -111,6 +111,7 @@ async function processPhotoToBox(inputBuffer, targetWidth, targetHeight) {
   return await sharp(inputBuffer)
     .rotate()
     .resize({ width: targetWidth, height: targetHeight, fit: 'cover', position: 'centre' })
+    .grayscale()
     .jpeg({ quality: JPEG_QUALITY })
     .toBuffer();
 }
@@ -253,5 +254,4 @@ if (require.main === module) {
       process.exit(1);
     });
 }
-
 
